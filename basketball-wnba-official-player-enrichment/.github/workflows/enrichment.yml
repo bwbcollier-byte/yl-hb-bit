@@ -26,7 +26,7 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      - name: Run enrichment
+      - name: Enrich WNBA Player Profiles
         env:
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
