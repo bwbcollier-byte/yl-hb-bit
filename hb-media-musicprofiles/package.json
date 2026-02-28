@@ -1,0 +1,26 @@
+{
+  "name": "hb-media-musicprofiles",
+  "version": "1.0.0",
+  "description": "Music media (albums/singles) enrichment pipeline",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "spotify": "ts-node src/spotify-media-enrichment.ts",
+    "musicbrainz": "ts-node src/musicbrainz-media-enrichment.ts",
+    "audiodb": "ts-node src/audiodb-media-enrichment.ts",
+    "rovi": "ts-node src/rovi-media-enrichment.ts",
+    "musicfetch": "ts-node src/musicfetch-media-enrichment.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.4.1",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/node-fetch": "^2.6.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

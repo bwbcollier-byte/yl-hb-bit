@@ -1,0 +1,36 @@
+name: MusicBrainz Media Enrichment
+
+on:
+  schedule:
+    # Runs every 8 hours
+    - cron: "0 */8 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Number of records to process (empty = max limits from script)"
+        required: false
+        default: "1000"
+
+jobs:
+  enrichment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run MusicBrainz Enrichment
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          LIMIT: ${{ github.event.inputs.limit || '1000' }}
+        run: npm run musicbrainz
