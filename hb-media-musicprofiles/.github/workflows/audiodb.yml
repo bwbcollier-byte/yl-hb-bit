@@ -1,0 +1,36 @@
+name: AudioDB Media Enrichment
+
+on:
+  schedule:
+    # Runs every 8 hours on the 30th minute to offset from MusicBrainz
+    - cron: "30 */8 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Number of media items to process (optional)"
+        required: false
+        type: string
+
+jobs:
+  enrich_media:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run AudioDB Media Enrichment
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AUDIODB_API_KEY: ${{ secrets.AUDIODB_API_KEY }}
+          LIMIT: ${{ github.event.inputs.limit || '' }}
+        run: npm run audiodb

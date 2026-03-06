@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Colors */
+  --color-brand-obsidian: var(--bg-obsidian);
+  --color-brand-surface-1: var(--bg-surface-1);
+  --color-brand-surface-2: var(--bg-surface-2);
+  --color-brand-violet: var(--color-violet);
+  --color-brand-magenta: var(--color-magenta);
+  --color-brand-blue: var(--color-blue);
+  --color-brand-cyan: var(--color-cyan);
+  --color-brand-neon: var(--color-neon);
+  --color-brand-light: var(--color-light);
+  --color-brand-text: var(--text-color);
+  --color-brand-muted: var(--text-muted);
+
+  --color-background: var(--bg-obsidian);
+  --color-foreground: var(--text-color);
+
+  /* Fonts */
+  --font-sans: var(--font-poppins);
+  --font-heading: var(--font-urbanist);
+}
+
+:root {
+  /* LIGHT MODE */
+  --bg-obsidian: #F9FAFB;
+  --bg-surface-1: #FFFFFF;
+  --bg-surface-2: #F3F4F6;
+  --color-violet: #9600ff;     /* Purple main accent */
+  --color-magenta: #ff00c1;    /* Pink */
+  --color-blue: #4900ff;
+  --color-cyan: #00b8ff;
+  --color-neon: #07f49e;       /* Neon Green */
+  --color-light: #F9F2FF;
+  --text-color: #120D26;       /* Dark background color as text */
+  --text-muted: #6B7280;
+}
+
+.dark {
+  /* DARK MODE (Matching attached BeatBay dashboard exactly) */
+  --bg-obsidian: #0A0A0A;      /* Deepest background (Main content area) */
+  --bg-surface-1: #161616;     /* Cards, Sidebar, and Header background */
+  --bg-surface-2: #212121;     /* Search bars, inner panels, hover states */
+  --color-violet: #9600ff;     /* Purple main accent */
+  --color-magenta: #ff00c1;    /* Pink */
+  --color-blue: #4900ff;
+  --color-cyan: #00b8ff;
+  --color-neon: #07f49e;       /* Neon Green */
+  --color-light: #F9F2FF;
+  --text-color: #FFFFFF;
+  --text-muted: #999999;       /* Neutral grayish muted text */
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
+
+@theme {
+  --animate-shimmer: shimmer 2s infinite;
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+}
