@@ -1,3 +1,4 @@
+import os
 import csv
 #!/usr/bin/env python3
 """
@@ -21,10 +22,10 @@ from datetime import date
 from bs4 import BeautifulSoup
 
 # ── Airtable Config ────────────────────────────────────────────────────────────
-AIRTABLE_API_KEY = "pat55yJeWST4RIQlr.421b76687eb458ba6399d083c4b34f29e0ee2d32081e222d59363d38939cd7a6"
-BASE_ID          = "appDd05XXSHwDjlwC"
-TABLE_ID         = "tblD8ox0IMVjMhf1x"
-VIEW_ID          = "viwJiadmPvQUsSqUs"  # 'To Process' view
+AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY", "")
+BASE_ID          = os.getenv("AIRTABLE_BASE_ID", "appDd05XXSHwDjlwC")
+TABLE_ID         = os.getenv("AIRTABLE_TABLE_ID", "tblD8ox0IMVjMhf1x")
+VIEW_ID          = os.getenv("AIRTABLE_VIEW_ID", "viwJiadmPvQUsSqUs")  # 'To Process' view
 
 AIRTABLE_HEADERS = {
     "Authorization": f"Bearer {AIRTABLE_API_KEY}",
