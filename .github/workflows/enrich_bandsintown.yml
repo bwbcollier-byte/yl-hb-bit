@@ -1,0 +1,33 @@
+name: Bandsintown Enrichment
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours (4 times a day)
+  workflow_dispatch:      # Allows manual trigger from GitHub UI
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run Enrichment Script
+        env:
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: ${{ secrets.AIRTABLE_BASE_ID }}
+          AIRTABLE_TABLE_ID: ${{ secrets.AIRTABLE_TABLE_ID }}
+          AIRTABLE_VIEW_ID: ${{ secrets.AIRTABLE_VIEW_ID }}
+        run: |
+          # Use --limit 500 for safety in Actions, or --all for full run
+          python enrich_bandsintown_airtable.py --all
