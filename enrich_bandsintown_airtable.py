@@ -1,3 +1,6 @@
+import asyncio
+from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth
 import os
 import csv
 #!/usr/bin/env python3
@@ -21,6 +24,13 @@ import re
 from datetime import date
 from bs4 import BeautifulSoup
 
+
+
+# ── Bypass Config (Bypass Akamai / Cloudflare via RapidAPI) ──────────────────
+RAPID_API_KEY  = os.getenv("RAPID_API_KEY", "8f8ab324eamsh88b8de70b402e0cp1d7d0ajsn13c934eadbd9")
+RAPID_API_HOST = "bypass-akamai-cloudflare.p.rapidapi.com"
+RAPID_API_URL  = "https://bypass-akamai-cloudflare.p.rapidapi.com/paid/akamai"
+
 # ── Airtable Config ────────────────────────────────────────────────────────────
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY", "")
 BASE_ID          = os.getenv("AIRTABLE_BASE_ID", "appDd05XXSHwDjlwC")
@@ -32,13 +42,28 @@ AIRTABLE_HEADERS = {
     "Content-Type": "application/json"
 }
 
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:123.0) Gecko/20100101 Firefox/123.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15",
+]
+import random
+
 SCRAPE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "DNT": "1",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
     "Sec-Fetch-Dest": "document",
     "Sec-Fetch-Mode": "navigate",
     "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
     "Referer": "https://www.google.com/"
 }
 
@@ -70,6 +95,30 @@ def update_running_stat(existing_json_str, new_value, date_str):
     arr.append({"date": date_str, "count": new_val, "diff": diff, "percent": round(percent, 2)})
     return json.dumps(arr)
 
+
+def fetch_page_with_playwright(url):
+    """Use a real browser to fetch the page content and bypass Cloudflare."""
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800}
+            )
+            page = context.new_page()
+            stealth(page)
+            
+            print(f"    [WEB] Navigating via Stealth Browser: {url}")
+            page.goto(url, wait_until="domcontentloaded", timeout=45000)
+            page.wait_for_timeout(2000) # Give it a moment to settle
+            
+            content = page.content()
+            browser.close()
+            return content
+    except Exception as e:
+        print(f"    [ERROR] Playwright failed: {e}")
+        return None
+
 # ── Bandsintown Scraper ────────────────────────────────────────────────────────
 
 
@@ -98,62 +147,41 @@ def heal_bandsintown_url(artist_name):
         print(f"    [ERROR] Healing failed for {artist_name}: {e}")
     return None
 
+
 def scrape_bandsintown(url: str) -> dict:
-    """Scrape an artist profile page and return structured data."""
+    """Scrape an artist profile page using Playwright to bypass Cloudflare."""
     result = {}
-    
-    # Force HTTPS
     if url.startswith("http://"):
         url = url.replace("http://", "https://", 1)
 
     max_retries = 2
+    html_content = None
     for attempt in range(max_retries):
-        try:
-            resp = session.get(url, timeout=15, allow_redirects=True)
-            if resp.status_code == 200:
-                break
-            
-            print(f"    [WARN] Attempt {attempt+1} failed with HTTP {resp.status_code} for {url}")
-            if attempt < max_retries - 1:
-                time.sleep(5) # Wait before retry
-            else:
-                return result
-        except Exception as e:
-            print(f"    [WARN] Request failed: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(5)
-            else:
-                return result
+        html_content = fetch_page_with_playwright(url)
+        if html_content:
+            break
+        print(f"    [WARN] Attempt {attempt+1} failed for {url}")
+        time.sleep(5)
+    
+    if not html_content:
+        return result
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    soup = BeautifulSoup(html_content, "html.parser")
+    artist_data = {}
+    events = []
+    reviews = []
 
-    artist_data   = {}
-    events        = []
-    reviews       = []
-
-    # ── Parse all JSON-LD blocks ──────────────────────────────────────────────
     for script in soup.find_all("script", type="application/ld+json"):
         try:
             data = json.loads(script.string or "")
-        except Exception:
-            continue
-
-        # Normalise — could be a single object or a list
-        items = data if isinstance(data, list) else [data]
-
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            schema_type = item.get("@type", "")
-
-            if schema_type == "MusicGroup":
-                artist_data = item
-
-            elif schema_type == "MusicEvent":
-                events.append(item)
-
-            elif schema_type == "Review":
-                reviews.append(item)
+            items = data if isinstance(data, list) else [data]
+            for item in items:
+                if not isinstance(item, dict): continue
+                stype = item.get("@type", "")
+                if stype == "MusicGroup": artist_data = item
+                elif stype == "MusicEvent": events.append(item)
+                elif stype == "Review": reviews.append(item)
+        except: continue
 
     # ── Artist fields ─────────────────────────────────────────────────────────
     result["Soc BIT Name"]     = artist_data.get("name", "")
@@ -426,7 +454,7 @@ def main():
                 time.sleep(0.5)
 
             # Polite delay between scrapes to avoid rate limiting
-            time.sleep(2)
+            time.sleep(random.uniform(3, 7))
 
         # Flush remaining records from this page
         if batch_queue:
