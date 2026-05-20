@@ -407,7 +407,7 @@ def main():
     records_resp = (
         supabase.table("hb_socials")
         .select("id, social_url, name, linked_talent")
-        .eq("type", "Bandsintown")
+        .eq("type", "BANDSINTOWN")
         .not_.is_("social_url", "null")
         .order("check_bandsintown_events", desc=False, nullsfirst=True)
         .limit(LIMIT)
